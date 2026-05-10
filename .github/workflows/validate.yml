@@ -1,0 +1,211 @@
+name: Validate Plugin
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  validate-manifest:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install validation tools
+      run: |
+        pip install pyyaml jsonschema pydantic
+    
+    - name: Validate plugin.yaml structure
+      run: |
+        python -c "
+        import yaml
+        import sys
+        
+        with open('plugin.yaml', 'r') as f:
+            manifest = yaml.safe_load(f)
+        
+        required_fields = ['name', 'version', 'description', 'entry_point']
+        missing = [f for f in required_fields if f not in manifest]
+        
+        if missing:
+            print(f'Missing required fields: {missing}')
+            sys.exit(1)
+        
+        print('✓ plugin.yaml is valid')
+        "
+    
+    - name: Validate entry point exists
+      run: |
+        python -c "
+        import yaml
+        import os
+        import sys
+        
+        with open('plugin.yaml', 'r') as f:
+            manifest = yaml.safe_load(f)
+        
+        entry = manifest.get('entry_point', '')
+        module, cls = entry.split(':')
+        file_path = module.replace('.', '/') + '.py'
+        
+        if not os.path.exists(file_path):
+            print(f'Entry point file not found: {file_path}')
+            sys.exit(1)
+        
+        # Check class exists
+        with open(file_path, 'r') as f:
+            content = f.read()
+            if f'class {cls}' not in content:
+                print(f'Class {cls} not found in {file_path}')
+                sys.exit(1)
+        
+        print(f'✓ Entry point {entry} is valid')
+        "
+    
+    - name: Check required files
+      run: |
+        required_files=(
+          "README.md"
+          "LICENSE"
+          "plugin.yaml"
+          "requirements.txt"
+          "src/__init__.py"
+        )
+        
+        missing=()
+        for file in "${required_files[@]}"; do
+          if [ ! -f "$file" ]; then
+            missing+=("$file")
+          fi
+        done
+        
+        if [ ${#missing[@]} -ne 0 ]; then
+          echo "Missing required files:"
+          printf '%s\n' "${missing[@]}"
+          exit 1
+        fi
+        
+        echo "✓ All required files present"
+    
+    - name: Validate version format
+      run: |
+        python -c "
+        import yaml
+        import re
+        import sys
+        
+        with open('plugin.yaml', 'r') as f:
+            manifest = yaml.safe_load(f)
+        
+        version = manifest.get('version', '')
+        
+        # Semantic versioning pattern
+        pattern = r'^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?(\+[a-zA-Z0-9.]+)?$'
+        
+        if not re.match(pattern, version):
+            print(f'Invalid version format: {version}')
+            print('Expected semantic versioning: MAJOR.MINOR.PATCH')
+            sys.exit(1)
+        
+        print(f'✓ Version {version} is valid')
+        "
+    
+    - name: Check code style
+      run: |
+        pip install black flake8 isort
+        
+        echo "Checking with black..."
+        black --check src tests || echo "::warning::Code style issues found with black"
+        
+        echo "Checking with flake8..."
+        flake8 src tests --max-line-length=100 --ignore=E203,W503 || echo "::warning::Code style issues found with flake8"
+        
+        echo "Checking with isort..."
+        isort --check-only src tests || echo "::warning::Import sorting issues found"
+
+  validate-security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install security tools
+      run: |
+        pip install bandit safety
+    
+    - name: Run security checks with bandit
+      run: |
+        bandit -r src/ -ll || echo "::warning::Security issues found"
+    
+    - name: Check dependencies for vulnerabilities
+      run: |
+        pip install -r requirements.txt
+        safety check || echo "::warning::Vulnerable dependencies found"
+    
+    - name: Check for secrets in code
+      run: |
+        if grep -r -E "(api[_-]?key|password|secret|token)\s*=\s*['\"][^'\"]+['\"]" src/ --exclude-dir=__pycache__; then
+          echo "::error::Potential hardcoded secrets found"
+          exit 1
+        fi
+        echo "✓ No hardcoded secrets detected"
+
+  validate-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Check documentation files
+      run: |
+        docs=(
+          "README.md"
+          "docs/usage.md"
+          "docs/configuration.md"
+        )
+        
+        for doc in "${docs[@]}"; do
+          if [ ! -f "$doc" ]; then
+            echo "::error::Missing documentation: $doc"
+            exit 1
+          fi
+          
+          # Check if file is not empty
+          if [ ! -s "$doc" ]; then
+            echo "::error::Empty documentation file: $doc"
+            exit 1
+          fi
+        done
+        
+        echo "✓ All documentation files present and non-empty"
+    
+    - name: Check README completeness
+      run: |
+        required_sections=(
+          "Installation"
+          "Usage"
+          "Configuration"
+        )
+        
+        for section in "${required_sections[@]}"; do
+          if ! grep -q "$section" README.md; then
+            echo "::warning::README.md missing section: $section"
+          fi
+        done
+        
+        echo "✓ README validation complete"

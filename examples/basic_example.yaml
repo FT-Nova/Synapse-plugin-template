@@ -1,0 +1,59 @@
+# Basic Example Configuration
+
+# This example demonstrates basic plugin usage with minimal configuration.
+# Perfect for getting started quickly.
+
+name: example-plugin
+version: 1.0.0
+description: Basic example configuration for quick start
+
+# Minimal configuration using defaults
+config_schema:
+  # Optional: Add your API key for real data
+  # Leave empty to use mock data for testing
+  api_key: ""
+  
+  # Use default endpoint
+  endpoint: "https://api.example.com"
+  
+  # Use default timeout (30 seconds)
+  timeout: 30
+  
+  # Enable caching for better performance
+  enable_caching: true
+  
+  # Info level logging
+  log_level: "INFO"
+
+# Tools provided by this plugin
+tools:
+  - example_tool
+  - fetch_data
+
+# Example usage scenarios:
+
+# Scenario 1: Process a simple query
+# Call: example_tool(query="hello world")
+# Returns: JSON formatted response with processed data
+
+# Scenario 2: Process with text output
+# Call: example_tool(query="test", options={"format": "text"})
+# Returns: Text formatted response (uppercase)
+
+# Scenario 3: Fetch external data (mock mode without API key)
+# Call: fetch_data(resource_id="123")
+# Returns: Mock data response
+
+# Scenario 4: Fetch specific fields
+# Call: fetch_data(resource_id="123", fields=["name", "email"])
+# Returns: Filtered data response
+
+# To use with real API:
+# 1. Set api_key to your actual API key
+# 2. Optionally customize endpoint if using different service
+# 3. Adjust timeout based on your API's response time
+
+# Environment variable alternative:
+# Instead of hardcoding api_key, use:
+# api_key: ${EXAMPLE_API_KEY}
+# Then set: export EXAMPLE_API_KEY="your-key-here"

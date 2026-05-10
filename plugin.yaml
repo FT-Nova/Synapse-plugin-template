@@ -1,0 +1,140 @@
+# Synapse Plugin Manifest
+# This file defines the plugin metadata, configuration, and capabilities
+
+name: example-plugin
+version: 1.0.0
+description: An example Synapse plugin demonstrating core functionality
+author: Your Name <your.email@example.com>
+license: MIT
+repository: https://github.com/yourusername/synapse-example-plugin
+
+# Synapse version compatibility
+synapse_version: ">=2.0.0"
+
+# Plugin entry point
+entry_point: src.example_plugin:ExamplePlugin
+
+# Plugin dependencies
+dependencies:
+  - requests>=2.31.0
+  - pydantic>=2.0.0
+
+# Plugin configuration schema
+config_schema:
+  type: object
+  properties:
+    api_key:
+      type: string
+      description: API key for external service
+      required: false
+      default: ""
+      secret: true
+    
+    endpoint:
+      type: string
+      description: API endpoint URL
+      required: false
+      default: "https://api.example.com"
+    
+    timeout:
+      type: integer
+      description: Request timeout in seconds
+      required: false
+      default: 30
+      minimum: 1
+      maximum: 300
+    
+    max_retries:
+      type: integer
+      description: Maximum number of retry attempts
+      required: false
+      default: 3
+      minimum: 0
+      maximum: 10
+    
+    enable_caching:
+      type: boolean
+      description: Enable response caching
+      required: false
+      default: true
+    
+    log_level:
+      type: string
+      description: Logging level
+      required: false
+      default: "INFO"
+      enum: ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+# Tools provided by this plugin
+tools:
+  - name: example_tool
+    description: Example tool that demonstrates plugin capabilities
+    category: utility
+    parameters:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Input query to process
+          required: true
+        
+        options:
+          type: object
+          description: Optional processing options
+          required: false
+          properties:
+            format:
+              type: string
+              enum: ["json", "text", "xml"]
+              default: "json"
+            
+            verbose:
+              type: boolean
+              default: false
+
+  - name: fetch_data
+    description: Fetch data from external API
+    category: data
+    parameters:
+      type: object
+      properties:
+        resource_id:
+          type: string
+          description: Resource identifier to fetch
+          required: true
+        
+        fields:
+          type: array
+          description: Specific fields to retrieve
+          required: false
+          items:
+            type: string
+
+# Event hooks this plugin subscribes to
+event_hooks:
+  - on_startup
+  - on_shutdown
+  - on_session_start
+  - on_session_end
+  - on_tool_execute
+  - on_error
+
+# Plugin capabilities
+capabilities:
+  - async_execution
+  - state_management
+  - error_recovery
+  - metrics_collection
+
+# Resource requirements
+resources:
+  memory_mb: 256
+  cpu_cores: 0.5
+  storage_mb: 100
+
+# Tags for discoverability
+tags:
+  - example
+  - template
+  - utility
+  - data-fetching
