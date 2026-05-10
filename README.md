@@ -1,8 +1,8 @@
 # SYNAPSE Plugin Template
 
-🚀 **Use this template** to create your own SYNAPSE plugin!
+🚀 **Use this template** to create your own SYNAPSE plugin in Java!
 
-This repository provides a complete, production-ready starting point for developing SYNAPSE plugins.
+This repository provides a complete, production-ready starting point for developing SYNAPSE plugins using Java 21, Spring Boot 3.x, and Gradle 8.x.
 
 [![Use this template](https://img.shields.io/badge/use%20this-template-blue?logo=github)](https://github.com/FTMahringer/Synapse-Plugin-Template/generate)
 
@@ -10,9 +10,11 @@ This repository provides a complete, production-ready starting point for develop
 
 ## 📋 What's Included
 
-- ✅ **Complete plugin structure** with example implementation
-- ✅ **Configuration examples** for common use cases
-- ✅ **Testing setup** with example tests
+- ✅ **Complete Java plugin structure** with example implementation
+- ✅ **Spring Boot 3.x integration** with dependency injection
+- ✅ **Gradle 8.x build system** with wrapper
+- ✅ **Configuration examples** using Spring Boot properties
+- ✅ **JUnit 5 testing setup** with example tests
 - ✅ **CI/CD workflows** for validation and testing
 - ✅ **Documentation templates** for your plugin
 - ✅ **Development tools** and utilities
@@ -20,6 +22,12 @@ This repository provides a complete, production-ready starting point for develop
 ---
 
 ## 🎯 Quick Start
+
+### Prerequisites
+
+- **Java 21** or later
+- **Gradle 8.5** or later (included via wrapper)
+- **Git**
 
 ### 1. Use This Template
 
@@ -37,21 +45,23 @@ cd YOUR_PLUGIN_NAME
 Update the following files:
 
 - `plugin.yaml` - Plugin metadata and configuration
-- `src/` - Your plugin implementation
+- `build.gradle` - Build configuration, dependencies, version
+- `settings.gradle` - Project name
+- `src/main/java/dev/synapse/plugin/example/` - Your plugin implementation
 - `README.md` - This file! Make it yours.
 - `LICENSE` - Choose your license
 
-### 4. Develop Your Plugin
+### 4. Build Your Plugin
 
 ```bash
-# Install dependencies (Python example)
-pip install -r requirements.txt
+# Build the plugin
+./gradlew build
 
 # Run tests
-pytest tests/
+./gradlew test
 
-# Validate plugin
-synapse plugin validate .
+# Create JAR
+./gradlew jar
 ```
 
 ### 5. Test Locally
@@ -70,32 +80,46 @@ synapse dev --watch-plugins .
 
 ```
 synapse-plugin-template/
-├── README.md                 # This file
-├── LICENSE                   # Plugin license
-├── plugin.yaml               # Plugin manifest
+├── README.md                                    # This file
+├── LICENSE                                      # Plugin license
+├── plugin.yaml                                  # Plugin manifest
+├── build.gradle                                 # Gradle build configuration
+├── settings.gradle                              # Gradle settings
+├── gradle.properties                            # Gradle properties
+├── gradlew                                      # Gradle wrapper (Unix)
+├── gradlew.bat                                  # Gradle wrapper (Windows)
 ├── .gitignore
 │
-├── src/                      # Plugin source code
-│   ├── __init__.py
-│   └── example_plugin.py     # Example implementation
+├── gradle/
+│   └── wrapper/
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
 │
-├── tests/                    # Plugin tests
-│   ├── __init__.py
-│   └── test_example.py
+├── src/
+│   ├── main/
+│   │   ├── java/dev/synapse/plugin/example/
+│   │   │   ├── ExamplePlugin.java              # Main plugin class
+│   │   │   ├── PluginConfig.java               # Configuration
+│   │   │   ├── ExampleToolRequest.java         # Tool request objects
+│   │   │   └── FetchDataRequest.java
+│   │   └── resources/
+│   │       ├── plugin.yml                       # Plugin descriptor
+│   │       └── application.yml                  # Spring Boot config
+│   │
+│   └── test/java/dev/synapse/plugin/example/
+│       └── ExamplePluginTest.java               # Unit tests
 │
-├── docs/                     # Plugin documentation
+├── docs/                                        # Plugin documentation
 │   ├── usage.md
 │   └── configuration.md
 │
-├── examples/                 # Usage examples
+├── examples/                                    # Usage examples
 │   └── basic_example.yaml
 │
-├── .github/
-│   └── workflows/
-│       ├── test.yml          # CI testing
-│       └── validate.yml      # Plugin validation
-│
-└── requirements.txt          # Python dependencies
+└── .github/
+    └── workflows/
+        ├── test.yml                             # CI testing
+        └── validate.yml                         # Plugin validation
 ```
 
 ---
@@ -110,72 +134,65 @@ The `plugin.yaml` file defines your plugin's metadata:
 name: my-plugin
 version: 1.0.0
 description: Short description of what your plugin does
+language: java
+build_system: gradle
 
 author: Your Name
-maintainers:
-  - name: Your Name
-    email: your.email@example.com
-    github: yourusername
+synapse_version: ">=2.0.0"
 
-synapse_version: ">=2.0.0,<3.0.0"
-
-tools:
-  - name: example_tool
-    description: Example tool description
-    parameters:
-      - name: input
-        type: string
-        required: true
-        description: Input parameter description
+entry_point: dev.synapse.plugin.mypackage.MyPlugin
 ```
 
 ### Implementing Tools
 
-Example plugin implementation (Python):
+Example plugin implementation (Java):
 
-```python
-from synapse.plugin import Plugin, tool
-
-class MyPlugin(Plugin):
-    """My awesome SYNAPSE plugin."""
+```java
+@Slf4j
+@Component
+public class MyPlugin {
     
-    @tool(
-        name="example_tool",
-        description="Does something useful"
-    )
-    def example_tool(self, input: str) -> dict:
-        """
-        Example tool implementation.
+    private final PluginConfig config;
+    
+    public MyPlugin(PluginConfig config) {
+        this.config = config;
+    }
+    
+    /**
+     * Example tool implementation
+     */
+    public Map<String, Object> exampleTool(ExampleToolRequest request) {
+        log.info("Processing query: {}", request.getQuery());
         
-        Args:
-            input: User input
-            
-        Returns:
-            Result dictionary
-        """
-        return {
-            "status": "success",
-            "result": f"Processed: {input}"
-        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", "success");
+        result.put("result", "Processed: " + request.getQuery());
+        
+        return result;
+    }
+}
 ```
 
 ### Plugin Lifecycle
 
 Your plugin can implement lifecycle hooks:
 
-```python
-class MyPlugin(Plugin):
-    def on_load(self):
-        """Called when plugin is loaded."""
-        print("Plugin loaded!")
+```java
+public class MyPlugin {
     
-    def on_enable(self):
-        """Called when plugin is enabled."""
-        self.init_resources()
+    public void onStartup() {
+        log.info("Plugin loaded!");
+    }
     
-    def on_disable(self):
-        """Called when plugin is disabled."""
-        self.cleanup_resources()
+    public void onShutdown() {
+        log.info("Plugin shutting down");
+        // Cleanup resources
+    }
+    
+    public void onSessionStart(String sessionId, Map<String, Object> context) {
+        log.info("Session started: {}", sessionId);
+    }
+}
 ```
 
 ---
@@ -184,31 +201,40 @@ class MyPlugin(Plugin):
 
 ### Unit Tests
 
-Write tests in the `tests/` directory:
+Write tests using JUnit 5:
 
-```python
-import pytest
-from src.example_plugin import MyPlugin
-
-def test_example_tool():
-    plugin = MyPlugin()
-    result = plugin.example_tool("test input")
+```java
+@SpringBootTest
+@DisplayName("MyPlugin Tests")
+class MyPluginTest {
     
-    assert result["status"] == "success"
-    assert "test input" in result["result"]
+    @Test
+    @DisplayName("Should process tool request successfully")
+    void testExampleTool() {
+        ExampleToolRequest request = ExampleToolRequest.builder()
+            .query("test input")
+            .build();
+        
+        Map<String, Object> result = plugin.exampleTool(request);
+        
+        assertThat(result.get("status")).isEqualTo("success");
+        assertThat(result.get("result")).asString()
+            .contains("test input");
+    }
+}
 ```
 
 ### Run Tests
 
 ```bash
 # Run all tests
-pytest tests/
+./gradlew test
 
-# Run with coverage
-pytest --cov=src tests/
+# Run with coverage report
+./gradlew test jacocoTestReport
 
-# Run specific test
-pytest tests/test_example.py::test_example_tool
+# Run specific test class
+./gradlew test --tests ExamplePluginTest
 ```
 
 ---
@@ -217,14 +243,36 @@ pytest tests/test_example.py::test_example_tool
 
 ### Plugin Configuration
 
-Users can configure your plugin in their SYNAPSE config:
+Define configuration using Spring Boot properties:
+
+```java
+@Data
+@Configuration
+@ConfigurationProperties(prefix = "synapse.plugin.myplugin")
+@Validated
+public class PluginConfig {
+    
+    private String apiKey;
+    
+    @Min(1)
+    @Max(300)
+    private int timeout = 30;
+    
+    private boolean enableCaching = true;
+}
+```
+
+### Application Configuration
+
+Users configure your plugin via `application.yml`:
 
 ```yaml
-plugins:
-  my-plugin:
-    api_key: ${MY_PLUGIN_API_KEY}
-    timeout_seconds: 30
-    enable_caching: true
+synapse:
+  plugin:
+    myplugin:
+      api-key: ${MY_PLUGIN_API_KEY}
+      timeout: 30
+      enable-caching: true
 ```
 
 ### Environment Variables
@@ -235,23 +283,6 @@ Use environment variables for sensitive data:
 export MY_PLUGIN_API_KEY=your_api_key_here
 ```
 
-### Configuration Schema
-
-Define configuration schema in `plugin.yaml`:
-
-```yaml
-config_schema:
-  api_key:
-    type: string
-    required: true
-    description: API key for the service
-  
-  timeout_seconds:
-    type: integer
-    default: 30
-    description: Request timeout in seconds
-```
-
 ---
 
 ## 🚀 Publishing Your Plugin
@@ -260,13 +291,13 @@ config_schema:
 
 ```bash
 # Run all tests
-pytest tests/
+./gradlew test
+
+# Build JAR
+./gradlew build
 
 # Validate plugin
 synapse plugin validate .
-
-# Test in SYNAPSE
-synapse dev --watch-plugins .
 ```
 
 ### 2. Update Documentation
@@ -302,45 +333,31 @@ synapse plugin install https://github.com/YOUR_USERNAME/YOUR_PLUGIN_NAME
 
 ## 🔒 Security Best Practices
 
-### Permissions
-
-Declare required permissions in `plugin.yaml`:
-
-```yaml
-permissions:
-  - network.http            # HTTP/HTTPS requests
-  - filesystem.read         # Read files
-  - filesystem.write:/tmp   # Write to /tmp only
-  - process.spawn           # Create subprocesses
-```
-
 ### Input Validation
 
-Always validate user input:
+Always validate user input using Bean Validation:
 
-```python
-@tool(name="safe_tool")
-def safe_tool(self, user_input: str) -> dict:
-    # Validate input
-    if not user_input or len(user_input) > 1000:
-        return {"status": "error", "message": "Invalid input"}
-    
-    # Sanitize input
-    sanitized = self.sanitize_input(user_input)
-    
-    # Process safely
-    return self.process(sanitized)
+```java
+@Data
+@Builder
+public class ToolRequest {
+    @NotBlank(message = "Query is required")
+    @Size(max = 1000, message = "Query too long")
+    private String query;
+}
 ```
 
-### Resource Limits
+### Configuration Security
 
-Set resource limits in `plugin.yaml`:
+Never hardcode secrets:
 
-```yaml
-limits:
-  memory_mb: 256
-  cpu_percent: 50
-  timeout_seconds: 30
+```java
+// ❌ Bad
+private String apiKey = "sk-abc123";
+
+// ✅ Good  
+@Value("${synapse.plugin.api-key}")
+private String apiKey;
 ```
 
 ---
@@ -351,7 +368,8 @@ limits:
 
 - [SYNAPSE Documentation](https://ftmahringer.github.io/Synapse/)
 - [Plugin Development Guide](https://ftmahringer.github.io/Synapse/plugins/development/getting-started)
-- [Plugin API Reference](https://ftmahringer.github.io/Synapse/plugins/architecture)
+- [Spring Boot Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/)
+- [Gradle User Manual](https://docs.gradle.org/current/userguide/userguide.html)
 
 ### Examples
 
@@ -393,8 +411,8 @@ Your plugin can use any license you choose. Common choices:
 Now that you've created your plugin repository:
 
 1. ✅ Customize `plugin.yaml` with your plugin details
-2. ✅ Implement your plugin tools in `src/`
-3. ✅ Write tests in `tests/`
+2. ✅ Implement your plugin tools in Java
+3. ✅ Write tests using JUnit 5
 4. ✅ Update this README with your plugin documentation
 5. ✅ Add usage examples in `examples/`
 6. ✅ Test locally with SYNAPSE

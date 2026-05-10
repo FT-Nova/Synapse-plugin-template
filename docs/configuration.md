@@ -1,71 +1,84 @@
 # Configuration Guide
 
-Complete reference for configuring the Example Plugin.
+Complete reference for configuring the Example Plugin using Spring Boot.
 
 ## Configuration File Format
 
-The plugin uses YAML configuration. The main configuration is defined in `plugin.yaml`:
+The plugin uses Spring Boot's YAML configuration format. Configuration is defined in `application.yml`:
 
 ```yaml
-name: example-plugin
-version: 1.0.0
-description: An example Synapse plugin
-author: Your Name <your.email@example.com>
-license: MIT
-
-# Plugin configuration
-config_schema:
-  api_key: ""
-  endpoint: "https://api.example.com"
-  timeout: 30
-  max_retries: 3
-  enable_caching: true
-  log_level: "INFO"
+synapse:
+  plugin:
+    example:
+      api-key: ""
+      endpoint: "https://api.example.com"
+      timeout: 30
+      max-retries: 3
+      enable-caching: true
+      log-level: "INFO"
 ```
 
 ## Configuration Parameters
 
 ### Core Settings
 
-#### `api_key`
-- **Type**: `string`
+#### `api-key`
+- **Type**: `String`
 - **Required**: No
 - **Default**: `""` (empty string)
 - **Secret**: Yes (marked as sensitive)
 - **Description**: API key for authenticating with external services
+- **Validation**: Via `@ConfigurationProperties`
 
 **Example**:
 ```yaml
-api_key: "sk-abc123def456ghi789"
+synapse:
+  plugin:
+    example:
+      api-key: "sk-abc123def456ghi789"
 ```
 
 **Best Practice**: Use environment variables:
 ```yaml
-api_key: ${EXAMPLE_API_KEY}
+synapse:
+  plugin:
+    example:
+      api-key: ${EXAMPLE_API_KEY}
+```
+
+Or set via environment:
+```bash
+export EXAMPLE_API_KEY=sk-abc123def456ghi789
 ```
 
 #### `endpoint`
-- **Type**: `string`
+- **Type**: `String`
 - **Required**: No
 - **Default**: `"https://api.example.com"`
-- **Validation**: Must start with `http://` or `https://`
+- **Validation**: Must start with `http://` or `https://` (via `@Pattern`)
 - **Description**: Base URL for API requests
 
 **Example**:
 ```yaml
-endpoint: "https://custom-api.mycompany.com"
+synapse:
+  plugin:
+    example:
+      endpoint: "https://custom-api.mycompany.com"
 ```
 
 #### `timeout`
-- **Type**: `integer`
+- **Type**: `int`
 - **Required**: No
 - **Default**: `30`
-- **Range**: 1-300 seconds
+- **Range**: 1-300 seconds (validated via `@Min` and `@Max`)
 - **Description**: Maximum time to wait for API responses
 
 **Example**:
 ```yaml
-timeout: 60  # 60 seconds
+synapse:
+  plugin:
+    example:
+      timeout: 60  # 60 seconds
 ```
 
 **Recommendations**:
@@ -73,21 +86,24 @@ timeout: 60  # 60 seconds
 - Use 60-120s for slow APIs
 - Use 5-10s for fast, local services
 
-#### `max_retries`
-- **Type**: `integer`
+#### `max-retries`
+- **Type**: `int`
 - **Required**: No
 - **Default**: `3`
-- **Range**: 0-10
+- **Range**: 0-10 (validated via `@Min` and `@Max`)
 - **Description**: Number of retry attempts for failed requests
 
 **Example**:
 ```yaml
-max_retries: 5
+synapse:
+  plugin:
+    example:
+      max-retries: 5
 ```
 
 **Note**: Retry delay uses exponential backoff (2^attempt seconds)
 
-#### `enable_caching`
+#### `enable-caching`
 - **Type**: `boolean`
 - **Required**: No
 - **Default**: `true`
@@ -95,7 +111,10 @@ max_retries: 5
 
 **Example**:
 ```yaml
-enable_caching: false  # Disable caching
+synapse:
+  plugin:
+    example:
+      enable-caching: false  # Disable caching
 ```
 
 **When to disable**:
@@ -103,8 +122,8 @@ enable_caching: false  # Disable caching
 - Limited memory environments
 - Testing scenarios
 
-#### `log_level`
-- **Type**: `string`
+#### `log-level`
+- **Type**: `String`
 - **Required**: No
 - **Default**: `"INFO"`
 - **Valid Values**: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
@@ -112,7 +131,10 @@ enable_caching: false  # Disable caching
 
 **Example**:
 ```yaml
-log_level: "DEBUG"
+synapse:
+  plugin:
+    example:
+      log-level: "DEBUG"
 ```
 
 **Level Guidelines**:
@@ -130,190 +152,246 @@ No additional configuration required. Behavior controlled by runtime parameters.
 
 ### fetch_data
 
-Requires `api_key` for real API calls. Without it, returns mock data.
+Requires `api-key` for real API calls. Without it, returns mock data.
 
 ## Environment-Specific Configurations
 
 ### Development
 
 ```yaml
-config_schema:
-  api_key: ${DEV_API_KEY}
-  endpoint: "http://localhost:8000"
-  timeout: 60
-  max_retries: 1
-  enable_caching: false  # Fresh data for testing
-  log_level: "DEBUG"
+spring:
+  profiles:
+    active: dev
+
+synapse:
+  plugin:
+    example:
+      api-key: ${DEV_API_KEY}
+      endpoint: "http://localhost:8000"
+      timeout: 60
+      max-retries: 1
+      enable-caching: false  # Fresh data for testing
+      log-level: "DEBUG"
 ```
 
 ### Staging
 
 ```yaml
-config_schema:
-  api_key: ${STAGING_API_KEY}
-  endpoint: "https://staging-api.example.com"
-  timeout: 30
-  max_retries: 3
-  enable_caching: true
-  log_level: "INFO"
+spring:
+  profiles:
+    active: staging
+
+synapse:
+  plugin:
+    example:
+      api-key: ${STAGING_API_KEY}
+      endpoint: "https://staging-api.example.com"
+      timeout: 30
+      max-retries: 3
+      enable-caching: true
+      log-level: "INFO"
 ```
 
 ### Production
 
 ```yaml
-config_schema:
-  api_key: ${PROD_API_KEY}
-  endpoint: "https://api.example.com"
-  timeout: 30
-  max_retries: 5
-  enable_caching: true
-  log_level: "WARNING"
+spring:
+  profiles:
+    active: prod
+
+synapse:
+  plugin:
+    example:
+      api-key: ${PROD_API_KEY}
+      endpoint: "https://api.example.com"
+      timeout: 30
+      max-retries: 5
+      enable-caching: true
+      log-level: "WARNING"
 ```
 
 ## Programmatic Configuration
 
-### Python Dictionary
+### Using PluginConfig Object
 
-```python
-from src.example_plugin import ExamplePlugin
+```java
+import dev.synapse.plugin.example.*;
 
-config = {
-    "api_key": "your-key",
-    "endpoint": "https://api.example.com",
-    "timeout": 60,
-    "max_retries": 3,
-    "enable_caching": True,
-    "log_level": "DEBUG"
+PluginConfig config = new PluginConfig();
+config.setApiKey("your-key");
+config.setEndpoint("https://api.example.com");
+config.setTimeout(60);
+config.setMaxRetries(3);
+config.setEnableCaching(true);
+config.setLogLevel("DEBUG");
+
+ExamplePlugin plugin = new ExamplePlugin(config);
+```
+
+### Using Spring Boot Auto-Configuration
+
+```java
+@Configuration
+public class PluginConfiguration {
+    
+    @Bean
+    public ExamplePlugin examplePlugin(PluginConfig config) {
+        return new ExamplePlugin(config);
+    }
 }
-
-plugin = ExamplePlugin(config)
 ```
 
-### Using Pydantic Model
-
-```python
-from src.example_plugin import PluginConfig, ExamplePlugin
-
-config = PluginConfig(
-    api_key="your-key",
-    timeout=60,
-    log_level="DEBUG"
-)
-
-plugin = ExamplePlugin(config.dict())
-```
+The configuration will be automatically injected from `application.yml`.
 
 ### Environment Variables
 
-```python
-import os
-from src.example_plugin import ExamplePlugin
+```java
+// Configuration is automatically loaded from environment variables
+// via Spring Boot's property resolution
 
-config = {
-    "api_key": os.getenv("EXAMPLE_API_KEY"),
-    "endpoint": os.getenv("EXAMPLE_ENDPOINT", "https://api.example.com"),
-    "timeout": int(os.getenv("EXAMPLE_TIMEOUT", "30")),
-    "log_level": os.getenv("EXAMPLE_LOG_LEVEL", "INFO")
-}
+// Set environment variables:
+// SYNAPSE_PLUGIN_EXAMPLE_APIKEY=your-key
+// SYNAPSE_PLUGIN_EXAMPLE_ENDPOINT=https://api.example.com
+// SYNAPSE_PLUGIN_EXAMPLE_TIMEOUT=30
 
-plugin = ExamplePlugin(config)
+// No code changes needed - Spring Boot handles it automatically
+```
+
+Or programmatically:
+
+```java
+import org.springframework.core.env.Environment;
+
+@Autowired
+private Environment env;
+
+String apiKey = env.getProperty("synapse.plugin.example.api-key");
 ```
 
 ## Configuration Validation
 
-The plugin automatically validates configuration on initialization:
+The plugin automatically validates configuration on initialization using Bean Validation:
 
-```python
-from pydantic import ValidationError
-from src.example_plugin import ExamplePlugin
+```java
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 
-try:
-    plugin = ExamplePlugin({
-        "timeout": 500,  # Invalid: exceeds maximum
-        "log_level": "INVALID"  # Invalid: not in enum
-    })
-except ValidationError as e:
-    print(e)
-    # Shows detailed validation errors
+try {
+    PluginConfig config = new PluginConfig();
+    config.setTimeout(500);  // Invalid: exceeds maximum
+    config.setLogLevel("INVALID");  // Invalid: not in enum
+    
+    // Validation happens automatically via @Validated
+    ExamplePlugin plugin = new ExamplePlugin(config);
+} catch (Exception e) {
+    // Validation errors will be thrown
+    System.err.println(e.getMessage());
+}
 ```
 
 ## Advanced Configuration
 
 ### Custom Logger Configuration
 
-```python
-import logging
-from src.example_plugin import ExamplePlugin
-
-# Configure custom logger
-logger = logging.getLogger("synapse.plugin.ExamplePlugin")
-logger.setLevel(logging.DEBUG)
-
-handler = logging.FileHandler("plugin.log")
-handler.setFormatter(logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-))
-logger.addHandler(handler)
-
-# Initialize plugin
-plugin = ExamplePlugin({"log_level": "DEBUG"})
+```java
+// Via application.yml
+logging:
+  level:
+    dev.synapse.plugin.example: DEBUG
+  file:
+    name: plugin.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 ```
 
-### Dynamic Configuration Updates
+Or programmatically:
 
-```python
-plugin = ExamplePlugin({"timeout": 30})
+```java
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 
-# Update configuration at runtime
-plugin.config.timeout = 60
-plugin.config.log_level = "DEBUG"
+LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+ch.qos.logback.classic.Logger logger = 
+    loggerContext.getLogger("dev.synapse.plugin.example");
+logger.setLevel(Level.DEBUG);
+```
 
-# Note: Some changes may require plugin restart
+### Configuration Profiles
+
+Use Spring profiles for environment-specific configuration:
+
+```yaml
+# application.yml
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+---
+# Development profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+synapse:
+  plugin:
+    example:
+      endpoint: "http://localhost:8000"
+      enable-caching: false
+
+---
+# Production profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+synapse:
+  plugin:
+    example:
+      endpoint: "https://api.example.com"
+      enable-caching: true
 ```
 
 ### Configuration Secrets Management
 
-#### Using AWS Secrets Manager
+#### Using Environment Variables (Recommended)
 
-```python
-import boto3
-import json
-from src.example_plugin import ExamplePlugin
-
-def get_secret(secret_name):
-    client = boto3.client('secretsmanager')
-    response = client.get_secret_value(SecretId=secret_name)
-    return json.loads(response['SecretString'])
-
-secrets = get_secret('example-plugin-secrets')
-
-config = {
-    "api_key": secrets['api_key'],
-    "endpoint": secrets['endpoint']
-}
-
-plugin = ExamplePlugin(config)
+```yaml
+synapse:
+  plugin:
+    example:
+      api-key: ${EXAMPLE_API_KEY}
 ```
 
-#### Using HashiCorp Vault
+```bash
+export EXAMPLE_API_KEY=your-secret-key
+```
 
-```python
-import hvac
-from src.example_plugin import ExamplePlugin
+#### Using Spring Cloud Config Server
 
-client = hvac.Client(url='https://vault.example.com')
-client.token = 'your-vault-token'
+```yaml
+spring:
+  cloud:
+    config:
+      uri: https://config-server.example.com
+      
+synapse:
+  plugin:
+    example:
+      api-key: ${example.api.key}  # Fetched from config server
+```
 
-secrets = client.secrets.kv.v2.read_secret_version(
-    path='example-plugin'
-)
+#### Using Encrypted Properties
 
-config = {
-    "api_key": secrets['data']['data']['api_key'],
-    "endpoint": secrets['data']['data']['endpoint']
-}
-
-plugin = ExamplePlugin(config)
+```yaml
+synapse:
+  plugin:
+    example:
+      api-key: '{cipher}AQBvXZ...'  # Encrypted value
 ```
 
 ## Configuration Best Practices

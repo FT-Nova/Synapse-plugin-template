@@ -11,13 +11,15 @@ repository: https://github.com/yourusername/synapse-example-plugin
 # Synapse version compatibility
 synapse_version: ">=2.0.0"
 
-# Plugin entry point
-entry_point: src.example_plugin:ExamplePlugin
+# Plugin entry point (Java)
+entry_point: dev.synapse.plugin.example.ExamplePlugin
+language: java
+build_system: gradle
 
-# Plugin dependencies
+# Plugin dependencies (Gradle coordinates)
 dependencies:
-  - requests>=2.31.0
-  - pydantic>=2.0.0
+  - org.springframework.boot:spring-boot-starter:3.2.0
+  - org.springframework.boot:spring-boot-starter-web:3.2.0
 
 # Plugin configuration schema
 config_schema:

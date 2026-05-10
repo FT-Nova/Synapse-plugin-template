@@ -6,51 +6,51 @@ This guide covers how to use the Example Plugin in your Synapse environment.
 
 ### 1. Installation
 
-Install the plugin using pip:
+Build and install the plugin using Gradle:
 
 ```bash
-pip install synapse-example-plugin
+# Build the plugin JAR
+./gradlew build
+
+# The JAR will be in build/libs/synapse-example-plugin-1.0.0.jar
 ```
 
-Or install from source:
+Or install from Maven/GitHub Packages:
 
 ```bash
-git clone https://github.com/yourusername/synapse-example-plugin
-cd synapse-example-plugin
-pip install -r requirements.txt
+# Add to your Synapse installation
+synapse plugin install dev.synapse.plugin:example-plugin:1.0.0
 ```
 
 ### 2. Basic Configuration
 
-Create a `plugin.yaml` configuration file:
+Create an `application.yml` configuration file:
 
 ```yaml
-name: example-plugin
-version: 1.0.0
-
-config_schema:
-  api_key: "your-api-key-here"
-  endpoint: "https://api.example.com"
-  timeout: 30
-  enable_caching: true
+synapse:
+  plugin:
+    example:
+      api-key: "your-api-key-here"
+      endpoint: "https://api.example.com"
+      timeout: 30
+      enable-caching: true
 ```
 
 ### 3. Load the Plugin
 
-```python
-from src.example_plugin import ExamplePlugin
+```java
+import dev.synapse.plugin.example.*;
 
-# Initialize with configuration
-config = {
-    "api_key": "your-api-key",
-    "timeout": 60,
-    "log_level": "DEBUG"
-}
+// Initialize with configuration
+PluginConfig config = new PluginConfig();
+config.setApiKey("your-api-key");
+config.setTimeout(60);
+config.setLogLevel("DEBUG");
 
-plugin = ExamplePlugin(config)
+ExamplePlugin plugin = new ExamplePlugin(config);
 
-# Start the plugin
-await plugin.on_startup()
+// Start the plugin
+plugin.onStartup();
 ```
 
 ## Using Plugin Tools
@@ -59,193 +59,241 @@ await plugin.on_startup()
 
 The `example_tool` processes queries with various output formats:
 
-```python
-# Basic usage
-result = await plugin.example_tool("hello world")
-print(result)
-# Output: {
-#   "status": "success",
-#   "query": "hello world",
-#   "format": "json",
-#   "processed": {"original": "hello world", "length": 11, "words": 2}
-# }
+```java
+// Basic usage
+ExampleToolRequest request = ExampleToolRequest.builder()
+    .query("hello world")
+    .build();
 
-# Text format
-result = await plugin.example_tool(
-    "hello world",
-    options={"format": "text"}
-)
-# Output: {"processed": "HELLO WORLD", ...}
+Map<String, Object> result = plugin.exampleTool(request);
+System.out.println(result);
+// Output: {
+//   status=success,
+//   query=hello world,
+//   format=json,
+//   processed={original=hello world, length=11, words=2}
+// }
 
-# Verbose output
-result = await plugin.example_tool(
-    "test",
-    options={"verbose": True, "format": "json"}
-)
-# Includes metadata about execution
+// Text format
+ExampleToolRequest textRequest = ExampleToolRequest.builder()
+    .query("hello world")
+    .options(Map.of("format", "text"))
+    .build();
+
+Map<String, Object> textResult = plugin.exampleTool(textRequest);
+// Output: {processed=HELLO WORLD, ...}
+
+// Verbose output
+ExampleToolRequest verboseRequest = ExampleToolRequest.builder()
+    .query("test")
+    .options(Map.of("verbose", true, "format", "json"))
+    .build();
+
+Map<String, Object> verboseResult = plugin.exampleTool(verboseRequest);
+// Includes metadata about execution
 ```
 
 ### Fetch Data Tool
 
 The `fetch_data` tool retrieves data from external APIs:
 
-```python
-# Basic fetch
-result = await plugin.fetch_data("resource-123")
+```java
+// Basic fetch
+FetchDataRequest request = FetchDataRequest.builder()
+    .resourceId("resource-123")
+    .build();
 
-# Fetch specific fields
-result = await plugin.fetch_data(
-    "resource-123",
-    fields=["name", "email", "status"]
-)
+Map<String, Object> result = plugin.fetchData(request);
+
+// Fetch specific fields
+FetchDataRequest fieldRequest = FetchDataRequest.builder()
+    .resourceId("resource-123")
+    .fields(List.of("name", "email", "status"))
+    .build();
+
+Map<String, Object> fieldResult = plugin.fetchData(fieldRequest);
 ```
 
-**Note**: Without an API key, the tool returns mock data. Configure `api_key` in your config for real API calls.
+**Note**: Without an API key, the tool returns mock data. Configure `apiKey` in your config for real API calls.
 
 ## Working with Sessions
 
 The plugin supports session tracking:
 
-```python
-session_id = "my-session-001"
+```java
+String sessionId = "my-session-001";
 
-# Start a session
-await plugin.on_session_start(session_id, {
-    "user": "john_doe",
-    "workspace": "/home/john/project"
-})
+// Start a session
+Map<String, Object> context = new HashMap<>();
+context.put("user", "john_doe");
+context.put("workspace", "/home/john/project");
 
-# Use tools within the session
-await plugin.on_tool_execute("example_tool", {"query": "test"}, session_id)
-result = await plugin.example_tool("test query")
+plugin.onSessionStart(sessionId, context);
 
-# End the session
-await plugin.on_session_end(session_id)
+// Use tools within the session
+Map<String, Object> params = Map.of("query", "test");
+plugin.onToolExecute("example_tool", params, sessionId);
+
+ExampleToolRequest request = ExampleToolRequest.builder()
+    .query("test query")
+    .build();
+Map<String, Object> result = plugin.exampleTool(request);
+
+// End the session
+plugin.onSessionEnd(sessionId);
 ```
 
 ## Lifecycle Management
 
 ### Startup and Shutdown
 
-```python
-# Startup - initialize resources
-await plugin.on_startup()
+```java
+// Startup - initialize resources
+plugin.onStartup();
 
-# Your application logic here
-# ...
+// Your application logic here
+// ...
 
-# Shutdown - cleanup resources
-await plugin.on_shutdown()
+// Shutdown - cleanup resources
+plugin.onShutdown();
 ```
 
 ### Error Handling
 
 The plugin provides error tracking:
 
-```python
-try:
-    result = await plugin.fetch_data("invalid-resource")
-except Exception as e:
-    # Plugin automatically logs the error
-    await plugin.on_error(e, {"operation": "fetch_data"})
+```java
+try {
+    FetchDataRequest request = FetchDataRequest.builder()
+        .resourceId("invalid-resource")
+        .build();
+    Map<String, Object> result = plugin.fetchData(request);
+} catch (Exception e) {
+    // Plugin automatically logs the error
+    plugin.onError(e, Map.of("operation", "fetch_data"));
     
-    # Check error history
-    errors = plugin.state["errors"]
-    print(f"Total errors: {len(errors)}")
+    // Check error history
+    Map<String, Object> metrics = plugin.getMetrics();
+    System.out.println("Total errors: " + metrics.get("error_count"));
+}
 ```
 
 ## Cache Management
 
 The plugin includes built-in caching:
 
-```python
-# Enable caching (default)
-plugin = ExamplePlugin({"enable_caching": True})
+```java
+// Enable caching (default)
+PluginConfig config = new PluginConfig();
+config.setEnableCaching(true);
+ExamplePlugin plugin = new ExamplePlugin(config);
 
-# First call - fetches and caches
-result1 = await plugin.example_tool("test query")
+// First call - fetches and caches
+ExampleToolRequest request = ExampleToolRequest.builder()
+    .query("test query")
+    .build();
+Map<String, Object> result1 = plugin.exampleTool(request);
 
-# Second call - returns cached result
-result2 = await plugin.example_tool("test query")
+// Second call - returns cached result
+Map<String, Object> result2 = plugin.exampleTool(request);
 
-# Clear cache manually
-plugin.clear_cache()
+// Clear cache manually
+plugin.clearCache();
 
-# Disable caching
-plugin = ExamplePlugin({"enable_caching": False})
+// Disable caching
+config.setEnableCaching(false);
+plugin = new ExamplePlugin(config);
 ```
 
 ## Monitoring and Metrics
 
 ### Get Plugin State
 
-```python
-state = plugin.get_state()
-print(state)
-# Output:
-# {
-#   "config": {...},
-#   "state": {
-#     "execution_count": 10,
-#     "cache": "5 entries",
-#     "errors": []
-#   },
-#   "sessions": 2
-# }
+```java
+Map<String, Object> state = plugin.getState();
+System.out.println(state);
+// Output:
+// {
+//   config=PluginConfig(...),
+//   state={
+//     execution_count=10,
+//     cache=5 entries,
+//     errors=0
+//   },
+//   sessions=2
+// }
 ```
 
 ### Get Metrics
 
-```python
-metrics = plugin.get_metrics()
-print(metrics)
-# Output:
-# {
-#   "execution_count": 10,
-#   "error_count": 0,
-#   "cache_size": 5,
-#   "active_sessions": 2,
-#   "uptime": 3600.5
-# }
+```java
+Map<String, Object> metrics = plugin.getMetrics();
+System.out.println(metrics);
+// Output:
+// {
+//   execution_count=10,
+//   error_count=0,
+//   cache_size=5,
+//   active_sessions=2,
+//   uptime=3600
+// }
 ```
 
 ## Advanced Usage
 
-### Async Operations
+### Concurrent Operations
 
-All plugin tools support async execution:
+Execute multiple tools concurrently using Java's CompletableFuture:
 
-```python
-import asyncio
+```java
+import java.util.concurrent.CompletableFuture;
 
-# Run multiple tools concurrently
-results = await asyncio.gather(
-    plugin.example_tool("query 1"),
-    plugin.example_tool("query 2"),
-    plugin.fetch_data("resource-1"),
-    plugin.fetch_data("resource-2")
-)
+// Run multiple tools concurrently
+CompletableFuture<Map<String, Object>> future1 = 
+    CompletableFuture.supplyAsync(() -> plugin.exampleTool(
+        ExampleToolRequest.builder().query("query 1").build()
+    ));
+
+CompletableFuture<Map<String, Object>> future2 = 
+    CompletableFuture.supplyAsync(() -> plugin.fetchData(
+        FetchDataRequest.builder().resourceId("resource-1").build()
+    ));
+
+// Wait for all to complete
+CompletableFuture.allOf(future1, future2).join();
+
+Map<String, Object> result1 = future1.get();
+Map<String, Object> result2 = future2.get();
 ```
 
 ### Custom Logging
 
 Configure logging level:
 
-```python
-plugin = ExamplePlugin({
-    "log_level": "DEBUG"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-})
+```java
+PluginConfig config = new PluginConfig();
+config.setLogLevel("DEBUG"); // DEBUG, INFO, WARNING, ERROR, CRITICAL
+ExamplePlugin plugin = new ExamplePlugin(config);
+```
+
+Or via application.yml:
+
+```yaml
+logging:
+  level:
+    dev.synapse.plugin.example: DEBUG
 ```
 
 ### Retry Configuration
 
 Configure API retry behavior:
 
-```python
-plugin = ExamplePlugin({
-    "max_retries": 5,  # Number of retry attempts
-    "timeout": 60      # Request timeout in seconds
-})
+```java
+PluginConfig config = new PluginConfig();
+config.setMaxRetries(5);  // Number of retry attempts
+config.setTimeout(60);     // Request timeout in seconds
+
+ExamplePlugin plugin = new ExamplePlugin(config);
 ```
 
 ## Integration with Synapse
@@ -254,13 +302,12 @@ When integrated with Synapse, tools are automatically registered:
 
 ```yaml
 # In your Synapse workspace configuration
-plugins:
-  - name: example-plugin
-    enabled: true
-    config:
-      api_key: ${EXAMPLE_API_KEY}  # Use environment variables
+synapse:
+  plugin:
+    example:
+      api-key: ${EXAMPLE_API_KEY}  # Use environment variables
       timeout: 30
-      enable_caching: true
+      enable-caching: true
 ```
 
 Then use tools through Synapse:
@@ -268,72 +315,76 @@ Then use tools through Synapse:
 ```
 User: Use example_tool to process "hello world"
 
-Agent: [Executes plugin.example_tool("hello world")]
+Agent: [Executes plugin.exampleTool("hello world")]
 ```
 
 ## Best Practices
 
 1. **Configuration Management**: Use environment variables for sensitive data:
-   ```python
-   import os
-   
-   config = {
-       "api_key": os.getenv("EXAMPLE_API_KEY"),
-       "endpoint": os.getenv("EXAMPLE_ENDPOINT", "https://api.example.com")
+   ```java
+   // In application.yml
+   synapse:
+     plugin:
+       example:
+         api-key: ${EXAMPLE_API_KEY}
+         endpoint: ${EXAMPLE_ENDPOINT:https://api.example.com}
+   ```
+
+2. **Error Handling**: Always wrap tool calls in try-catch:
+   ```java
+   try {
+       Map<String, Object> result = plugin.fetchData(request);
+   } catch (Exception e) {
+       plugin.onError(e, Map.of("context", "additional info"));
+       // Handle error appropriately
    }
    ```
 
-2. **Error Handling**: Always wrap tool calls in try-except:
-   ```python
-   try:
-       result = await plugin.fetch_data("resource-id")
-   except Exception as e:
-       await plugin.on_error(e, {"context": "additional info"})
-       # Handle error appropriately
-   ```
-
 3. **Resource Cleanup**: Always call shutdown:
-   ```python
-   try:
-       await plugin.on_startup()
-       # Use plugin
-   finally:
-       await plugin.on_shutdown()
+   ```java
+   try {
+       plugin.onStartup();
+       // Use plugin
+   } finally {
+       plugin.onShutdown();
+   }
    ```
 
 4. **Session Tracking**: Use sessions for multi-turn interactions:
-   ```python
-   session_id = generate_session_id()
-   await plugin.on_session_start(session_id, context)
-   # Multiple tool calls
-   await plugin.on_session_end(session_id)
+   ```java
+   String sessionId = generateSessionId();
+   plugin.onSessionStart(sessionId, context);
+   // Multiple tool calls
+   plugin.onSessionEnd(sessionId);
    ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-**Issue**: "requests library not available"
-- **Solution**: Install dependencies: `pip install -r requirements.txt`
+**Issue**: "No class def found error"
+- **Solution**: Ensure all dependencies are included: `./gradlew dependencies`
 
 **Issue**: API calls return mock data
-- **Solution**: Configure `api_key` in plugin configuration
+- **Solution**: Configure `api-key` in plugin configuration
 
 **Issue**: Cache not working
-- **Solution**: Verify `enable_caching: true` in configuration
+- **Solution**: Verify `enable-caching: true` in configuration
 
 **Issue**: High memory usage
 - **Solution**: Disable caching or clear cache periodically:
-  ```python
-  plugin.clear_cache()
+  ```java
+  plugin.clearCache();
   ```
 
 ### Debug Mode
 
 Enable debug logging for troubleshooting:
 
-```python
-plugin = ExamplePlugin({"log_level": "DEBUG"})
+```yaml
+logging:
+  level:
+    dev.synapse.plugin.example: DEBUG
 ```
 
 This will output detailed information about:
@@ -347,4 +398,4 @@ This will output detailed information about:
 
 - Read [Configuration Guide](configuration.md) for detailed configuration options
 - Check [examples/](../examples/) for more usage examples
-- See [API Documentation](api.md) for complete API reference
+- Build and test: `./gradlew test`
