@@ -1,0 +1,74 @@
+# SYNAPSE Model Provider Plugin Manifest
+# Required fields marked with [REQUIRED]. Fill in all TODOs before publishing.
+
+# ── Identity ──────────────────────────────────────────────────────────────────
+id: your-author/your-provider-name  # [REQUIRED] format: {github-username}/{plugin-name}
+name: Your Provider Name            # [REQUIRED] human-readable display name
+version: 1.0.0
+author: your-github-username        # [REQUIRED]
+license: MIT                        # MIT | Apache-2.0 | other
+repository: https://github.com/your-author/your-provider-name
+
+# ── Type ──────────────────────────────────────────────────────────────────────
+type: model-provider
+
+# ── Provider-specific ─────────────────────────────────────────────────────────
+provider_id: your-provider          # [REQUIRED] stable provider id, e.g. "openai", "anthropic"
+
+# Declare which auth modes your provider supports.
+# At least one must be set. Remove unsupported modes.
+auth_modes:
+  - api_key       # standard key-based auth — config.getSecret("api_key")
+  # - acp         # Anthropic Claude Platform — config.getSecret("acp_subscription_id")
+  # - none        # no auth (e.g. local Ollama — remove api_key from config_schema too)
+
+# ── Compatibility ─────────────────────────────────────────────────────────────
+requires:
+  synapse_version: ">=2.6.0"
+  api_version: ">=1.0.0"
+  java: ">=25"
+
+# ── Entry point ───────────────────────────────────────────────────────────────
+entry_point: com.example.myprovider.MyModelProviderPlugin  # [REQUIRED] update to your class
+language: java
+build_system: gradle                # gradle | maven
+
+# ── Config schema ─────────────────────────────────────────────────────────────
+config_schema:
+  api_key:
+    type: string
+    required: false                 # false because ACP is an alternative
+    secret: true
+    description: "API key. Required if not using ACP subscription login."
+
+  # acp_subscription_id:
+  #   type: string
+  #   required: false
+  #   secret: true
+  #   description: "ACP subscription ID. Use instead of api_key for ACP-registered providers."
+
+  # base_url:
+  #   type: string
+  #   required: false
+  #   default: "https://api.example.com/v1"
+  #   description: "Override API base URL (useful for Azure deployments or local proxies)."
+
+  # default_model:
+  #   type: string
+  #   required: false
+  #   default: "your-default-model-id"
+  #   description: "Default model id used when none is specified in the request."
+
+# ── Resource limits (optional overrides) ──────────────────────────────────────
+# resources:
+#   max_threads: 10
+#   lifecycle_timeout_seconds: 10
+#   message_handler_timeout_seconds: 30
+
+# ── Store metadata ─────────────────────────────────────────────────────────────
+store:
+  description: "TODO: one-sentence description shown in the store card."
+  tags:
+    - model-provider
+    - your-provider                  # e.g. openai, anthropic, ollama
+  icon: icon.png                     # optional: 128x128 PNG in repo root

@@ -1,0 +1,79 @@
+# SYNAPSE Channel Plugin Manifest
+# Required fields marked with [REQUIRED]. Fill in all TODOs before publishing.
+
+# ── Identity ──────────────────────────────────────────────────────────────────
+id: your-author/your-channel-name   # [REQUIRED] format: {github-username}/{plugin-name}
+name: Your Channel Name             # [REQUIRED] human-readable display name
+version: 1.0.0
+author: your-github-username        # [REQUIRED]
+license: MIT                        # MIT | Apache-2.0 | other
+repository: https://github.com/your-author/your-channel-name
+
+# ── Type ──────────────────────────────────────────────────────────────────────
+type: channel
+
+# ── Channel-specific ──────────────────────────────────────────────────────────
+channel_id: your-channel            # [REQUIRED] stable platform id, e.g. "telegram", "discord"
+
+# ── Compatibility ─────────────────────────────────────────────────────────────
+requires:
+  synapse_version: ">=2.6.0"
+  api_version: ">=1.0.0"
+  java: ">=25"
+
+# ── Hard dependencies (auto-installed from store) ─────────────────────────────
+# Uncomment and fill in if your plugin requires other plugins:
+# requires:
+#   plugins:
+#     - id: oauth-helper
+#       version: ">=1.0.0"
+#       type: hard
+
+# ── Soft dependencies (optional features) ─────────────────────────────────────
+# Uncomment if your plugin has optional integrations:
+# soft_requires:
+#   - id: metrics-exporter
+#     version: ">=1.0.0"
+#     feature: "Enables per-plugin Prometheus metrics export"
+
+# ── Entry point ───────────────────────────────────────────────────────────────
+entry_point: com.example.myplugin.MyChannelPlugin  # [REQUIRED] update to your class
+language: java
+build_system: gradle                # gradle | maven
+
+# ── Config schema ─────────────────────────────────────────────────────────────
+# These fields appear in the dashboard config form and are validated before onLoad().
+# Secret fields are injected in clear text inside the isolated ClassLoader — never log them.
+config_schema:
+  bot_token:
+    type: string
+    required: true
+    secret: true
+    description: "Bot token from the platform. Never log this value."
+
+  # webhook_secret:
+  #   type: string
+  #   required: false
+  #   secret: true
+  #   description: "Webhook signing secret for request verification."
+
+  # polling_interval_seconds:
+  #   type: integer
+  #   required: false
+  #   default: 5
+  #   description: "Polling interval in seconds. Used when webhook is not available."
+
+# ── Resource limits (optional overrides from trust-tier defaults) ──────────────
+# Only set if you need more than the defaults. Requires justification for community plugins.
+# resources:
+#   max_threads: 10                          # default: Community=10, Official=25
+#   lifecycle_timeout_seconds: 10            # default: Community=10, Official=30
+#   message_handler_timeout_seconds: 30      # default: Community=30, Official=60
+
+# ── Store metadata ─────────────────────────────────────────────────────────────
+store:
+  description: "TODO: one-sentence description shown in the store card."
+  tags:
+    - channel
+    - your-platform                  # e.g. telegram, discord, whatsapp
+  icon: icon.png                     # optional: 128x128 PNG in repo root

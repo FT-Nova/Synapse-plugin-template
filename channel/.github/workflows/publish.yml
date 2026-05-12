@@ -1,0 +1,31 @@
+name: Publish to Community Store
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Plugin publishing instructions
+        run: |
+          echo ""
+          echo "=================================================="
+          echo " Plugin publishing is coming in a future release."
+          echo "=================================================="
+          echo ""
+          echo "For now, submit your plugin to the community store manually:"
+          echo ""
+          echo "  1. Make sure your plugin passes all validate.yml checks."
+          echo "  2. Create a release (push a version tag) via release.yml."
+          echo "  3. Open a PR against:"
+          echo "       https://github.com/FTMahringer/synapse-plugins-community"
+          echo "     Add your plugin entry to plugins/index.yml."
+          echo ""
+          echo "For official plugin submissions, contact the SYNAPSE team."
+          echo ""

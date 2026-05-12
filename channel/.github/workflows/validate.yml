@@ -1,0 +1,142 @@
+name: Validate
+
+on:
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  contents: read
+  packages: read
+  pull-requests: write
+
+jobs:
+  validate-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check manifest.yml exists
+        run: |
+          if [ ! -f manifest.yml ]; then
+            echo "::error::manifest.yml not found"
+            exit 1
+          fi
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Validate required manifest fields
+        run: |
+          required=(id name version author license type channel_id entry_point)
+          fail=0
+          for field in "${required[@]}"; do
+            val=$(yq ".$field" manifest.yml)
+            if [ -z "$val" ] || [ "$val" = "null" ]; then
+              echo "::error::manifest.yml missing required field: $field"
+              fail=1
+            fi
+          done
+          [ $fail -eq 0 ] && echo "manifest.yml fields OK"
+          exit $fail
+
+      - name: Validate version format
+        run: |
+          version=$(yq '.version' manifest.yml)
+          if ! echo "$version" | grep -qE '^\d+\.\d+\.\d+'; then
+            echo "::error::Invalid version: $version — expected semver (MAJOR.MINOR.PATCH)"
+            exit 1
+          fi
+          echo "Version $version is valid"
+
+      - name: Validate plugin type
+        run: |
+          type=$(yq '.type' manifest.yml)
+          if [ "$type" != "channel" ]; then
+            echo "::error::manifest.yml type must be 'channel', got: $type"
+            exit 1
+          fi
+
+      - name: Validate entry point class exists
+        run: |
+          entry=$(yq '.entry_point' manifest.yml)
+          file="src/main/java/$(echo "$entry" | tr '.' '/').java"
+          if [ ! -f "$file" ]; then
+            echo "::error::Entry point class not found at: $file"
+            exit 1
+          fi
+          classname=$(echo "$entry" | awk -F. '{print $NF}')
+          if ! grep -q "class $classname" "$file"; then
+            echo "::error::Class $classname not found in $file"
+            exit 1
+          fi
+          echo "Entry point $entry OK"
+
+  validate-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: "25"
+          distribution: "temurin"
+          cache: gradle
+
+      - name: Build (no tests)
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f "build.gradle.kts" ]; then
+            chmod +x gradlew
+            ./gradlew shadowJar -x test --no-daemon
+          elif [ -f "pom.xml" ]; then
+            mvn package -DskipTests -q
+          fi
+
+      - name: Verify JAR produced
+        run: |
+          jar=$(ls build/libs/*.jar 2>/dev/null || ls target/*.jar 2>/dev/null | grep -v original | head -1)
+          if [ -z "$jar" ]; then
+            echo "::error::No JAR produced"
+            exit 1
+          fi
+          echo "JAR produced: $jar"
+
+  validate-no-forbidden-refs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for forbidden imports in source
+        run: |
+          forbidden=(
+            "org.springframework"
+            "javax.persistence"
+            "jakarta.persistence"
+            "org.hibernate"
+            "io.lettuce"
+            "org.apache.kafka"
+            "sun\."
+            "com\.sun\."
+          )
+          fail=0
+          for pattern in "${forbidden[@]}"; do
+            if grep -r --include="*.java" -E "import $pattern" src/main/java/; then
+              echo "::error::Forbidden import found: $pattern"
+              fail=1
+            fi
+          done
+          [ $fail -eq 0 ] && echo "No forbidden imports found"
+          exit $fail
+
+      - name: Check for hardcoded secrets
+        run: |
+          if grep -r --include="*.java" -E '(apiKey|password|secret|token)\s*=\s*"[^"]+"' src/main/java/; then
+            echo "::error::Potential hardcoded secret found"
+            exit 1
+          fi
+          echo "No hardcoded secrets found"
