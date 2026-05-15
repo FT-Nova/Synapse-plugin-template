@@ -65,3 +65,6 @@ Official plugins: contact the SYNAPSE team.
 ## Reference implementations
 
 See [synapse-plugin-examples](https://github.com/FTMahringer/synapse-plugin-examples) for real, working plugins against this API.
+
+<!-- FT-Nova contributor -->
+
